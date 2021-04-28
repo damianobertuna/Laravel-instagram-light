@@ -14,7 +14,7 @@ class ProfilesController extends Controller
         //$user = User::findOrFail($user);
         $follows = (auth()->user()) ? auth()->user()->following->contains($user->id) : false;
 
-        $postCount = Cache::remember(
+        /*$postCount = Cache::remember(
             'count.posts.' . $user->id,
             now()->addSeconds(30),
             function () use ($user) {
@@ -22,20 +22,33 @@ class ProfilesController extends Controller
             });
 
         $followersCount = Cache::remember(
-            'count.posts.' . $user->id,
+            'count.followers.' . $user->id,
             now()->addSeconds("30"),
             function () use ($user) {
-                $user->profile->followers->count();
+                return $user->profile->followers->count();
             });
 
         $followingCount = Cache::remember(
-            "count.posts." . $user->id,
+            "count.following." . $user->id,
             now()->addSeconds('30'),
             function () use ($user) {
-                $user->following->count();
-            });
+                return $user->following->count();
+            });*/
+        $postCount = $this->cacheData('posts', '30', $user, $user->posts->count());
+        $followersCount = $this->cacheData('followers', '30', $user, $user->profile->followers->count());
+        $followingCount = $this->cacheData('following', '30', $user, $user->following->count());
 
         return view('profiles.index', compact('user', 'follows', 'postCount', 'followersCount', 'followingCount'));//['user' => $user,]);
+    }
+
+    public function cacheData($variableToCache, $timeToCache, $user, $countingVariable)
+    {
+        return Cache::remember(
+            "count." . $variableToCache.".". $user->id,
+            now()->addSeconds($timeToCache),
+            function () use ($countingVariable) {
+                return $countingVariable;
+            });
     }
 
     public function edit(User $user)
